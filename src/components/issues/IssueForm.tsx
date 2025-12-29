@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../common/Button';
 import { InteractiveMap } from './IssueMap';
 import { ISSUE_TYPES, SEVERITIES } from '../../data/constants';
-import { useIssueStore } from '../../store/useIssueStore';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addIssue } from '../../store/slices/issuesSlice';
+import { selectNextIssueId } from '../../store/selectors/issuesSelectors';
 import type { IssueType, Severity, Location, NewIssue } from '../../types';
 
 export function IssueForm() {
   const navigate = useNavigate();
-  const { addIssue, generateIssueId } = useIssueStore();
+  const dispatch = useAppDispatch();
+  const previewId = useAppSelector(selectNextIssueId);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<{
@@ -29,8 +32,6 @@ export function IssueForm() {
     description?: string;
     location?: string;
   }>({});
-
-  const previewId = generateIssueId();
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -67,7 +68,7 @@ export function IssueForm() {
         location: formData.location!,
       };
 
-      await addIssue(newIssue);
+      await dispatch(addIssue(newIssue)).unwrap();
       navigate('/issues');
     } catch (error) {
       console.error('Error creating issue:', error);

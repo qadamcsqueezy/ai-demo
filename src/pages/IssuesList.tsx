@@ -3,15 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/common/Button';
 import { IssueCard } from '../components/issues/IssueCard';
-import { useIssueStore } from '../store/useIssueStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loadIssues } from '../store/slices/issuesSlice';
+import { selectIssues, selectIsLoading } from '../store/selectors/issuesSelectors';
 
 export function IssuesList() {
   const navigate = useNavigate();
-  const { issues, isLoading, loadIssues } = useIssueStore();
+  const dispatch = useAppDispatch();
+  const issues = useAppSelector(selectIssues);
+  const isLoading = useAppSelector(selectIsLoading);
 
   useEffect(() => {
-    loadIssues();
-  }, [loadIssues]);
+    dispatch(loadIssues());
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-gray-50">

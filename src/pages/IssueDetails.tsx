@@ -4,7 +4,9 @@ import { Header } from '../components/layout/Header';
 import { Button } from '../components/common/Button';
 import { StatusBadge, SeverityBadge, TypeBadge } from '../components/issues/StatusBadge';
 import { StaticMap } from '../components/issues/IssueMap';
-import { useIssueStore } from '../store/useIssueStore';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loadIssues } from '../store/slices/issuesSlice';
+import { selectIssues, selectIsLoading, selectIssueById } from '../store/selectors/issuesSelectors';
 
 function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('en-US', {
@@ -18,15 +20,16 @@ function formatDate(isoDate: string): string {
 export function IssueDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getIssueById, isLoading, loadIssues, issues } = useIssueStore();
+  const dispatch = useAppDispatch();
+  const issues = useAppSelector(selectIssues);
+  const isLoading = useAppSelector(selectIsLoading);
+  const issue = useAppSelector((state) => selectIssueById(state, id || ''));
 
   useEffect(() => {
     if (issues.length === 0) {
-      loadIssues();
+      dispatch(loadIssues());
     }
-  }, [issues.length, loadIssues]);
-
-  const issue = id ? getIssueById(id) : undefined;
+  }, [issues.length, dispatch]);
 
   if (isLoading) {
     return (
