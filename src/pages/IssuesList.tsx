@@ -1,16 +1,41 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Button } from '../components/common/Button';
 import { IssueCard } from '../components/issues/IssueCard';
+import { FilterBar } from '../components/issues/FilterBar';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadIssues } from '../store/slices/issuesSlice';
-import { selectIssues, selectIsLoading } from '../store/selectors/issuesSelectors';
+import {
+  selectIssues,
+  selectFilteredIssues,
+  selectIsLoading,
+  selectFilterStats,
+  type FilterParams,
+} from '../store/selectors/issuesSelectors';
+import type { IssueType, Status, Severity } from '../types';
+
+// Parse URL params helper
+function parseArrayParam(param: string | null): string[] {
+  return param ? param.split(',').filter(Boolean) : [];
+}
 
 export function IssuesList() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const issues = useAppSelector(selectIssues);
+  const [searchParams] = useSearchParams();
+
+  // Parse filters from URL
+  const filters: FilterParams = {
+    searchText: searchParams.get('search') || undefined,
+    types: parseArrayParam(searchParams.get('types')) as IssueType[],
+    statuses: parseArrayParam(searchParams.get('statuses')) as Status[],
+    severities: parseArrayParam(searchParams.get('severities')) as Severity[],
+  };
+
+  const allIssues = useAppSelector(selectIssues);
+  const filteredIssues = useAppSelector((state) => selectFilteredIssues(state, filters));
+  const filterStats = useAppSelector((state) => selectFilterStats(state, filters));
   const isLoading = useAppSelector(selectIsLoading);
 
   useEffect(() => {
@@ -33,7 +58,7 @@ export function IssuesList() {
           <div className="flex items-center justify-center py-12">
             <div className="text-gray-500">Loading issues...</div>
           </div>
-        ) : issues.length === 0 ? (
+        ) : allIssues.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg
@@ -62,14 +87,32 @@ export function IssuesList() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">
-              {issues.length} issue{issues.length !== 1 ? 's' : ''} reported
-            </p>
-            {issues.map((issue) => (
-              <IssueCard key={issue.id} issue={issue} />
-            ))}
-          </div>
+          <>
+            <FilterBar />
+            {filteredIssues.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">
+                  No issues match your filters
+                </p>
+                <p className="text-sm text-gray-400">
+                  Try adjusting your search or filter criteria
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-500">
+                  {filterStats.hasActiveFilters
+                    ? `Showing ${filteredIssues.length} of ${filterStats.total} issue${
+                        filterStats.total !== 1 ? 's' : ''
+                      }`
+                    : `${filteredIssues.length} issue${filteredIssues.length !== 1 ? 's' : ''} reported`}
+                </p>
+                {filteredIssues.map((issue) => (
+                  <IssueCard key={issue.id} issue={issue} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
