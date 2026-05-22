@@ -1,63 +1,65 @@
 ---
-title: "Map Integration"
-description: "Leaflet map components — interactive (creation) and static (detail)"
-domain: maps
+title: Map
+description: Leaflet map components — interactive picker and static display
+domain: map
 related_docs:
   - docs/features/issue-creation.md
   - docs/features/issue-detail.md
-tags: [map, leaflet, location, openstreetmap, interactive, static]
+tags:
+  [
+    map,
+    Leaflet,
+    InteractiveMap,
+    StaticMap,
+    location,
+    pin,
+    marker,
+    coordinates,
+    OpenStreetMap,
+  ]
 ---
 
-# Map Integration
+# Map
 
 ## What it does
-Two Leaflet map components handle location UX: `InteractiveMap` lets users click to pin an issue location during creation; `StaticMap` displays a fixed location on the detail page.
+
+Two Leaflet-based map components: `InteractiveMap` lets users click to drop a pin and capture coordinates during issue creation; `StaticMap` shows a fixed pin on the issue's saved location in the detail view.
 
 ## Functional & business requirements
 
 ### User-facing requirements
-- During issue creation: a user must click anywhere on the map to set the issue location.
-- During issue creation: a user must see a marker at the clicked point; re-clicking moves the marker.
-- During issue creation: a user must see the selected coordinates displayed below the map.
-- On issue detail: a user must see a non-interactive map centered on the issue location with a marker.
-- On issue detail: a user must see coordinates (and optional address) below the map.
+
+- `InteractiveMap`: map must default to Rabat, Morocco (lat 34.0209, lng -6.8416), zoom 13.
+- `InteractiveMap`: clicking the map drops/moves a single marker and emits `{ lat, lng }` via `onLocationSelect`.
+- `InteractiveMap`: selected coordinates must display below the map as text.
+- `StaticMap`: renders at zoom 15 centered on issue coordinates with all interaction disabled.
+- `StaticMap`: displays coordinates below the map; shows address if present.
+- Both maps use OpenStreetMap tiles (no API key).
 
 ### Business constraints
-- Default center is Rabat, Morocco (`34.0209, -6.8416`) at zoom 13 for creation maps. Detail map centers on the issue location at zoom 15.
-- Map tiles served by OpenStreetMap (`https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`). OSM attribution must be displayed (enforced by Leaflet `tileLayer` attribution).
-- Only `lat` and `lng` are captured from map click — no reverse geocoding.
+
+- Maps are mounted imperatively via `useRef` + `useEffect` — never re-mounted on re-render. Cleanup (`map.remove()`) runs on unmount.
+- Leaflet default marker icon is patched at module level to fix Vite asset resolution (`L.Marker.prototype.options.icon`).
+- `address` field on `Location` is optional and not captured by the map click — only `lat`/`lng` are set interactively. [NEEDS CONFIRMATION: is address ever populated outside mock data?]
 
 ### Acceptance criteria
-- [ ] `InteractiveMap` renders centered on Rabat at zoom 13 on mount
-- [ ] Clicking the map places or moves a marker to the clicked coordinates
-- [ ] Clicked coordinates are passed to `onLocationSelect` callback
-- [ ] `StaticMap` renders centered on `location.lat/lng` at zoom 15 with all interactions disabled
-- [ ] Marker icon renders correctly (Leaflet default icon Vite fix applied)
-- [ ] Map container has `z-0` to prevent Leaflet overlapping page dropdowns
 
-### Edge cases with business impact
-- **Leaflet Vite icon fix**: Default Leaflet marker icon breaks in Vite builds due to asset URL resolution. Fixed by explicitly importing marker PNG assets and calling `L.icon({...})` with `iconUrl`, `iconRetinaUrl`, `shadowUrl`. This is applied once at module level in `IssueMap.tsx:11` and set as `L.Marker.prototype.options.icon`. Do not remove this.
-- **Double-initialization guard**: Both components check `if (!mapRef.current || mapInstanceRef.current) return` in the init effect to prevent creating two map instances in React StrictMode.
-- **Cleanup**: Cleanup function calls `map.remove()` and nullifies refs. Without this, navigating back to the form creates a duplicate map on the same DOM node.
-
-### Open questions / assumptions
-- [ ] Should `InteractiveMap` support reverse geocoding to populate `address`? Currently not implemented. [NEEDS CONFIRMATION]
-- [ ] Should the map default center change based on user location (geolocation API)? [NEEDS CONFIRMATION]
-
-## User roles
-| Role | Can do | Cannot do |
-|------|--------|-----------|
-| Any visitor | Pick location (create), view location (detail) | — |
-
-## Business rules
-→ See `docs/business-rules/issue-rules.md` (location required rule). Do NOT restate here.
+- [ ] `InteractiveMap` opens centered on Rabat at zoom 13
+- [ ] Clicking map moves marker and updates parent form state via `onLocationSelect`
+- [ ] Coordinates text updates on each click
+- [ ] `StaticMap` renders with no pan/zoom/scroll/click interaction
+- [ ] `StaticMap` shows marker at exact `location.lat/lng`
+- [ ] Neither map throws on unmount/remount
 
 ## Key source files
-| File | Purpose | Key functions |
-|------|---------|---------------|
-| `src/components/issues/IssueMap.tsx` | Both map components | `InteractiveMap`, `StaticMap` |
-| `src/data/constants.ts` | Map defaults | `DEFAULT_MAP_CENTER`, `DEFAULT_MAP_ZOOM` |
+
+| File                                 | Purpose               | Key exports                              |
+| ------------------------------------ | --------------------- | ---------------------------------------- |
+| `src/components/issues/IssueMap.tsx` | Both map components   | `InteractiveMap`, `StaticMap`            |
+| `src/data/constants.ts`              | Default center + zoom | `DEFAULT_MAP_CENTER`, `DEFAULT_MAP_ZOOM` |
+| `src/types/index.ts`                 | Location type         | `Location`                               |
 
 ## Related features
-- `docs/features/issue-creation.md`
-- `docs/features/issue-detail.md`
+
+- `docs/features/issue-creation.md` — uses `InteractiveMap`
+- `docs/features/issue-detail.md` — uses `StaticMap`

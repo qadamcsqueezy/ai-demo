@@ -1,167 +1,391 @@
-- id: overview
-  description: "First-read orientation — what the app does, tech stack, folder structure, routes, entry points"
-  docs:
-    - docs/00_overview.md
-  sources:
-    - src/App.tsx
-    - src/main.tsx
-    - src/index.css
-  tags: [overview, architecture, stack, routes, entry, vite, react, typescript]
+# City Issue Reporter Documentation Manifest
+# Topic index mapping features/domains to doc files and source code paths
+# Used by AI agents to find relevant documentation for any task
 
-- id: glossary
-  description: "Single-definition reference for all domain terms, enums, constants, component names"
-  docs:
-    - docs/glossary.md
-  sources:
-    - src/types/index.ts
-    - src/data/constants.ts
-  tags: [glossary, terms, issue, location, severity, status, issuetype, id, constants, enums, redux, indexeddb]
+topics:
+  - id: issue-creation
+    description: "Form flow for reporting a new city issue — validation, ID generation, IndexedDB write, Redux update"
+    docs:
+      - docs/features/issue-creation.md
+      - docs/business-rules/issue-rules.md
+      - docs/architecture/data-model.md
+    source_paths:
+      - src/pages/CreateIssue.tsx
+      - src/components/issues/IssueForm.tsx
+      - src/store/slices/issuesSlice.ts
+      - src/store/selectors/issuesSelectors.ts
+      - src/data/constants.ts
+      - src/types/index.ts
+    tags:
+      [
+        create,
+        report,
+        form,
+        IssueForm,
+        addIssue,
+        NewIssue,
+        validateForm,
+        validation,
+        required fields,
+        issue type,
+        severity,
+        description,
+        location,
+        submit,
+        isSubmitting,
+        "Please select an issue type",
+        "Please select a severity level",
+        "Please provide a description",
+        "Please select a location on the map",
+      ]
 
-- id: data-model
-  description: "Issue entity schema, Location sub-object, IndexedDB structure, Redux state shape"
-  docs:
-    - docs/architecture/data-model.md
-  sources:
-    - src/types/index.ts
-    - src/db/indexedDb.ts
-    - src/store/slices/issuesSlice.ts
-    - src/store/store.ts
-  tags: [data-model, schema, issue, location, indexeddb, redux, state, persistence, entity, fields, crud]
+  - id: issue-filtering
+    description: "Search and multi-select filter controls on the issue list — URL param state, memoized selectors"
+    docs:
+      - docs/features/issue-filtering.md
+      - docs/business-rules/issue-rules.md
+    source_paths:
+      - src/components/issues/FilterBar.tsx
+      - src/pages/IssuesList.tsx
+      - src/store/selectors/issuesSelectors.ts
+      - src/data/constants.ts
+    tags:
+      [
+        filter,
+        search,
+        FilterBar,
+        MultiSelectDropdown,
+        selectFilteredIssues,
+        selectFilterStats,
+        FilterParams,
+        URL params,
+        searchParams,
+        types,
+        statuses,
+        severities,
+        "No issues match your filters",
+        "Clear all",
+        "Showing X of Y",
+      ]
 
-- id: issue-creation
-  description: "Creating and submitting a new issue — form fields, validation, ID generation, redirect"
-  docs:
-    - docs/features/issue-creation.md
-    - docs/business-rules/issue-rules.md
-    - docs/conventions/forms.md
-    - docs/workflows/report-issue.md
-  sources:
-    - src/pages/CreateIssue.tsx
-    - src/components/issues/IssueForm.tsx
-    - src/store/slices/issuesSlice.ts
-  tags: [create, form, report, submit, validation, issue, new, id, required, description, type, severity, location]
+  - id: issue-detail
+    description: "Read-only detail page for a single issue — badges, static map, not-found state"
+    docs:
+      - docs/features/issue-detail.md
+      - docs/business-rules/issue-rules.md
+      - docs/architecture/data-model.md
+    source_paths:
+      - src/pages/IssueDetails.tsx
+      - src/components/issues/StatusBadge.tsx
+      - src/components/issues/IssueMap.tsx
+      - src/store/selectors/issuesSelectors.ts
+    tags:
+      [
+        detail,
+        IssueDetails,
+        StaticMap,
+        selectIssueById,
+        TypeBadge,
+        StatusBadge,
+        SeverityBadge,
+        "Issue not found",
+        formatDate,
+        reportedAt,
+        "/issues/:id",
+      ]
 
-- id: issue-list
-  description: "Issues list page — loading, empty state, card layout, count display"
-  docs:
-    - docs/features/issue-filtering.md
-    - docs/workflows/browse-issues.md
-  sources:
-    - src/pages/IssuesList.tsx
-    - src/components/issues/IssueCard.tsx
-    - src/store/slices/issuesSlice.ts
-  tags: [list, issues, browse, load, cards, sort, newest, empty, startup]
+  - id: map
+    description: "Leaflet map components — interactive location picker and static read-only display"
+    docs:
+      - docs/features/map.md
+    source_paths:
+      - src/components/issues/IssueMap.tsx
+      - src/data/constants.ts
+      - src/types/index.ts
+    tags:
+      [
+        map,
+        Leaflet,
+        InteractiveMap,
+        StaticMap,
+        Location,
+        pin,
+        marker,
+        coordinates,
+        OpenStreetMap,
+        DEFAULT_MAP_CENTER,
+        DEFAULT_MAP_ZOOM,
+        Rabat,
+        lat,
+        lng,
+        onLocationSelect,
+      ]
 
-- id: issue-filtering
-  description: "Search and multi-select filters — URL params, FilterBar, selectFilteredIssues"
-  docs:
-    - docs/features/issue-filtering.md
-    - docs/business-rules/issue-rules.md
-  sources:
-    - src/components/issues/FilterBar.tsx
-    - src/store/selectors/issuesSelectors.ts
-    - src/pages/IssuesList.tsx
-  tags: [filter, search, type, status, severity, url, params, dropdown, multi-select, clear, filterbar]
+  - id: data-model
+    description: "Issue entity schema, Location sub-object, NewIssue type, IndexedDB structure, Redux state shape"
+    docs:
+      - docs/architecture/data-model.md
+      - docs/glossary.md
+    source_paths:
+      - src/types/index.ts
+      - src/db/indexedDb.ts
+      - src/store/slices/issuesSlice.ts
+      - src/store/store.ts
+    tags:
+      [
+        Issue,
+        NewIssue,
+        Location,
+        IssueType,
+        Severity,
+        Status,
+        schema,
+        entity,
+        fields,
+        id,
+        reportedAt,
+        IndexedDB,
+        city-issues-db,
+        ISS-YYYY-NNN,
+        generateIssueIdFromState,
+      ]
 
-- id: issue-detail
-  description: "Read-only detail view — badges, formatted date, full description, static map"
-  docs:
-    - docs/features/issue-detail.md
-    - docs/features/map.md
-  sources:
-    - src/pages/IssueDetails.tsx
-    - src/components/issues/StatusBadge.tsx
-    - src/components/issues/IssueMap.tsx
-    - src/store/selectors/issuesSelectors.ts
-  tags: [detail, view, read-only, badge, date, description, map, not-found, id, navigation]
+  - id: state-management
+    description: "Redux store, typed hooks, thunks, and memoized selectors"
+    docs:
+      - docs/conventions/state.md
+    source_paths:
+      - src/store/store.ts
+      - src/store/hooks.ts
+      - src/store/slices/issuesSlice.ts
+      - src/store/selectors/issuesSelectors.ts
+    tags:
+      [
+        Redux,
+        Redux Toolkit,
+        useAppDispatch,
+        useAppSelector,
+        createAsyncThunk,
+        createSelector,
+        loadIssues,
+        addIssue,
+        issuesSlice,
+        isLoading,
+        RootState,
+        AppDispatch,
+        selector,
+        thunk,
+      ]
 
-- id: map
-  description: "Leaflet map components — InteractiveMap for creation, StaticMap for detail view"
-  docs:
-    - docs/features/map.md
-  sources:
-    - src/components/issues/IssueMap.tsx
-    - src/data/constants.ts
-  tags: [map, leaflet, location, lat, lng, interactive, static, click, marker, openstreetmap, tile, rabat, coordinates]
+  - id: forms
+    description: "Form patterns — local state, validation, submission, error display"
+    docs:
+      - docs/conventions/forms.md
+    source_paths:
+      - src/components/issues/IssueForm.tsx
+    tags:
+      [
+        form,
+        validation,
+        validateForm,
+        errors,
+        isSubmitting,
+        handleSubmit,
+        useState,
+        required,
+        trim,
+        radio,
+        select,
+        textarea,
+      ]
 
-- id: issue-rules
-  description: "All business constraints — required fields, status on creation, ID format, filter logic, persistence rules"
-  docs:
-    - docs/business-rules/issue-rules.md
-  sources:
-    - src/components/issues/IssueForm.tsx
-    - src/store/slices/issuesSlice.ts
-    - src/store/selectors/issuesSelectors.ts
-    - src/db/indexedDb.ts
-  tags: [rules, validation, required, status, reported, id, format, filter, or, and, persist, seed, mock, trim]
+  - id: styling
+    description: "Tailwind CSS conventions, badge color maps, common layout patterns"
+    docs:
+      - docs/conventions/styling.md
+    source_paths:
+      - src/data/constants.ts
+      - src/components/issues/StatusBadge.tsx
+    tags:
+      [
+        Tailwind,
+        badge,
+        color,
+        STATUS_COLORS,
+        SEVERITY_COLORS,
+        ISSUE_TYPE_COLORS,
+        pill,
+        bg-yellow,
+        bg-blue,
+        bg-green,
+        bg-red,
+        layout,
+        max-w-4xl,
+        max-w-2xl,
+      ]
 
-- id: state-conventions
-  description: "Redux Toolkit patterns — what lives in Redux vs URL vs local state, thunks, selectors, hooks"
-  docs:
-    - docs/conventions/state.md
-  sources:
-    - src/store/store.ts
-    - src/store/hooks.ts
-    - src/store/slices/issuesSlice.ts
-    - src/store/selectors/issuesSelectors.ts
-  tags: [redux, state, thunk, selector, hooks, useAppDispatch, useAppSelector, filter, url, loadIssues, addIssue, memoized]
+  - id: components
+    description: "Component file placement rules, inventory of all shared components and their props"
+    docs:
+      - docs/conventions/components.md
+    source_paths:
+      - src/components/
+      - src/pages/
+    tags:
+      [
+        Button,
+        Header,
+        IssueCard,
+        IssueForm,
+        InteractiveMap,
+        StaticMap,
+        FilterBar,
+        StatusBadge,
+        SeverityBadge,
+        TypeBadge,
+        MultiSelectDropdown,
+        component,
+        props,
+        file placement,
+        common,
+        layout,
+        issues,
+      ]
 
-- id: component-conventions
-  description: "Component file placement, naming, prop patterns, Leaflet map pattern, typed hooks"
-  docs:
-    - docs/conventions/components.md
-  sources:
-    - src/components/
-    - src/pages/
-  tags: [components, naming, props, placement, structure, leaflet, hooks, PascalCase, export]
+  - id: architecture
+    description: "App entry point, routing, folder structure, external services"
+    docs:
+      - docs/00_overview.md
+    source_paths:
+      - src/main.tsx
+      - src/App.tsx
+      - src/index.css
+    tags:
+      [
+        routes,
+        routing,
+        BrowserRouter,
+        entry point,
+        Provider,
+        StrictMode,
+        folder structure,
+        OpenStreetMap,
+        IndexedDB,
+        no backend,
+        browser-only,
+      ]
 
-- id: styling-conventions
-  description: "Tailwind v4 usage, badge color maps, button variants, form field classes, map heights"
-  docs:
-    - docs/conventions/styling.md
-  sources:
-    - src/data/constants.ts
-    - src/components/common/Button.tsx
-    - src/components/issues/StatusBadge.tsx
-    - src/index.css
-  tags: [styling, tailwind, colors, badge, button, form, map, tokens, status-colors, severity-colors, type-colors, responsive]
+  - id: glossary
+    description: "All domain terms, enum values, constants, and type names defined in one place"
+    docs:
+      - docs/glossary.md
+    source_paths:
+      - src/types/index.ts
+      - src/data/constants.ts
+    tags:
+      [
+        glossary,
+        terms,
+        enum,
+        IssueType,
+        Severity,
+        Status,
+        Location,
+        NewIssue,
+        Issue,
+        FilterParams,
+        DEFAULT_MAP_CENTER,
+        DEFAULT_MAP_ZOOM,
+        mock data,
+        ISS-,
+      ]
 
-- id: form-conventions
-  description: "Form state shape, validation pattern, submission with unwrap, error display, isSubmitting"
-  docs:
-    - docs/conventions/forms.md
-  sources:
-    - src/components/issues/IssueForm.tsx
-  tags: [forms, validation, errors, submit, unwrap, isSubmitting, useState, formData]
+  - id: persistence
+    description: "IndexedDB operations — open, read, write, delete, seed"
+    docs:
+      - docs/architecture/data-model.md
+      - docs/business-rules/issue-rules.md
+    source_paths:
+      - src/db/indexedDb.ts
+      - src/data/mockData.ts
+    tags:
+      [
+        IndexedDB,
+        idb,
+        city-issues-db,
+        getDB,
+        getAllIssues,
+        getIssueById,
+        addIssue,
+        updateIssue,
+        deleteIssue,
+        clearAllIssues,
+        getIssueCount,
+        mock data,
+        seed,
+        getInitialMockData,
+      ]
 
-- id: testing-conventions
-  description: "Current test coverage (none) and recommended approach if tests are added"
-  docs:
-    - docs/conventions/testing.md
-  sources: []
-  tags: [testing, vitest, jest, coverage, unit, integration, indexeddb, selector, thunk]
+  - id: workflows
+    description: "Step-by-step user flows — browse issues and report a new issue"
+    docs:
+      - docs/workflows/browse-issues.md
+      - docs/workflows/report-issue.md
+    source_paths:
+      - src/pages/IssuesList.tsx
+      - src/pages/CreateIssue.tsx
+      - src/store/slices/issuesSlice.ts
+    tags:
+      [
+        workflow,
+        flow,
+        browse,
+        report,
+        loadIssues,
+        navigate,
+        redirect,
+        cancel,
+        step-by-step,
+      ]
 
-- id: report-issue-workflow
-  description: "Step-by-step user flow for reporting a new issue — entry, fill, validate, submit, redirect"
-  docs:
-    - docs/workflows/report-issue.md
-    - docs/features/issue-creation.md
-    - docs/business-rules/issue-rules.md
-  sources:
-    - src/pages/CreateIssue.tsx
-    - src/components/issues/IssueForm.tsx
-    - src/store/slices/issuesSlice.ts
-  tags: [workflow, report, create, submit, redirect, cancel, error, state-transitions]
+  - id: ui-widgets
+    description: "Shared UI primitives — Button and Header with no dedicated feature doc"
+    docs: []
+    source_paths:
+      - src/components/common/Button.tsx
+      - src/components/layout/Header.tsx
+    tags:
+      [
+        Button,
+        variant,
+        primary,
+        secondary,
+        outline,
+        size,
+        sm,
+        md,
+        lg,
+        Header,
+        showBackButton,
+        rightAction,
+        title,
+      ]
 
-- id: browse-issues-workflow
-  description: "App startup, data load, list render, filtering interaction, and detail navigation flow"
-  docs:
-    - docs/workflows/browse-issues.md
-    - docs/features/issue-filtering.md
-    - docs/features/issue-detail.md
-  sources:
-    - src/pages/IssuesList.tsx
-    - src/pages/IssueDetails.tsx
-    - src/store/slices/issuesSlice.ts
-    - src/data/mockData.ts
-  tags: [workflow, browse, load, startup, mock, seed, filter, navigate, detail, back]
+  - id: utilities
+    description: "Pure utility functions — ID generation, date formatting, text truncation"
+    docs: []
+    source_paths:
+      - src/store/slices/issuesSlice.ts
+      - src/components/issues/IssueCard.tsx
+      - src/pages/IssueDetails.tsx
+    tags:
+      [
+        generateIssueIdFromState,
+        formatDate,
+        truncateText,
+        parseArrayParam,
+        buildURLParams,
+        utility,
+        helper,
+        pure function,
+      ]

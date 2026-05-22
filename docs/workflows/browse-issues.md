@@ -1,65 +1,43 @@
----
-title: "Browse Issues Workflow"
-description: "App startup, initial data load, list display, filtering, and navigation to detail"
-domain: issues
-related_docs:
-  - docs/features/issue-filtering.md
-  - docs/features/issue-detail.md
-  - docs/business-rules/issue-rules.md
-tags: [workflow, list, browse, load, filter, navigation]
----
+# Workflow: Browse Issues
 
-# Browse Issues Workflow
+## Trigger
 
-## App startup / initial load
+User navigates to `/issues` (app root redirects here).
 
-1. `main.tsx` mounts Redux `Provider` wrapping `App`
-2. `BrowserRouter` initializes; `/` redirects to `/issues`
-3. `IssuesList` mounts; `useEffect` dispatches `loadIssues()`
-4. `loadIssues` thunk:
-   - Calls `getAllIssues()` from IndexedDB
-   - If result is empty: writes 5 mock issues to IndexedDB, uses them as result
-   - Sorts by `reportedAt` descending
-   - Returns sorted array
-5. `loadIssues.fulfilled` sets `state.issues.issues` and `state.isLoading = false`
-6. List re-renders with issues
+## Steps
 
-## Loading state
-- `isLoading` starts `true`
-- `IssuesList` renders "Loading issues..." spinner while `isLoading`
-- On `loadIssues.fulfilled` or `loadIssues.rejected`: `isLoading = false`
+### 1. Page mounts
 
-## Empty state
-- If `allIssues.length === 0` after load: "No issues reported yet" + "Report New Issue" button
-- In practice: mock seed data prevents this on first launch
+- `IssuesList` dispatches `loadIssues()` via `useEffect`
+- `isLoading` is `true` → renders "Loading issues..." spinner
 
-## List display
-- `FilterBar` renders above the list (only when issues exist)
-- `IssueCard` per issue, ordered newest-first
-- Clicking a card: `navigate('/issues/${issue.id}')`
-- Description truncated to 100 characters in card view
+### 2. loadIssues thunk
 
-## Filtering flow
+- Calls `getAllIssues()` from IndexedDB
+- If result is empty → inserts 5 mock issues via `getInitialMockData()` + `addIssueToDb()`
+- Sorts all issues by `reportedAt` descending (newest first)
+- Returns sorted array
 
-1. User interacts with `FilterBar`
-2. `FilterBar` calls `setSearchParams(buildURLParams(...))`
-3. URL updates (no page reload)
-4. `IssuesList` reads new `useSearchParams()` → constructs `FilterParams`
-5. `selectFilteredIssues(state, filters)` recomputes (memoized)
-6. List re-renders with filtered results
-7. Count string updates: "Showing X of Y issues"
+### 3. State update
 
-For filter rule details → `docs/business-rules/issue-rules.md`
+- `loadIssues.fulfilled` → `state.issues = payload`, `state.isLoading = false`
 
-## Detail navigation flow
+### 4. List renders
 
-1. User clicks `IssueCard`
-2. `navigate('/issues/${issue.id}')`
-3. `IssueDetails` mounts; reads `useParams().id`
-4. Checks `issues.length === 0` — if true, dispatches `loadIssues()`
-5. `selectIssueById(state, id)` finds issue
-6. Renders detail view
+- If `allIssues.length === 0` (shouldn't happen post-seed): empty state with "Report New Issue" CTA
+- Otherwise: `FilterBar` + issue count text + list of `IssueCard` components
 
-## Back navigation
-- "Back" button in `Header` calls `navigate(-1)` (browser history back)
-- "Back to Issues" button calls `navigate('/issues')` (explicit)
+### 5. Filtering (optional)
+
+- User interacts with `FilterBar` → URL params update (`?search=`, `?types=`, `?statuses=`, `?severities=`)
+- `IssuesList` re-reads params, passes to `selectFilteredIssues` + `selectFilterStats`
+- List re-renders with filtered results; count text updates
+
+### 6. Navigate to detail
+
+- User clicks an `IssueCard` → `navigate('/issues/:id')`
+- → See `docs/workflows/report-issue.md` for create flow from the list
+
+## Business rules applied in this flow
+
+→ See `docs/business-rules/issue-rules.md`

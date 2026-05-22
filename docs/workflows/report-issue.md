@@ -1,79 +1,64 @@
----
-title: "Report Issue Workflow"
-description: "Step-by-step flow for creating and submitting a new issue"
-domain: issues
-related_docs:
-  - docs/features/issue-creation.md
-  - docs/business-rules/issue-rules.md
-tags: [workflow, report, create, submit, redirect]
----
+# Workflow: Report an Issue
 
-# Report Issue Workflow
+## Trigger
 
-## Overview
-
-User navigates to the create form, fills it out, and submits. Issue is persisted and user lands on the updated list.
+User clicks "Report New Issue" button on `/issues`.
 
 ## Steps
 
-### 1. Entry
-- User clicks "Report New Issue" button on `/issues` (`IssuesList.tsx:49`)
-- React Router navigates to `/issues/create`
-- `CreateIssue` renders `Header` + `IssueForm`
+### 1. Navigate to form
 
-### 2. Form render
-- `IssueForm` mounts; `selectNextIssueId` reads Redux state and displays predicted ID (read-only)
-- `InteractiveMap` initializes centered on Rabat (`34.0209, -6.8416`) zoom 13
-- All form fields empty; `errors` empty
+- `Button` onClick → `navigate('/issues/create')`
+- `CreateIssue` page renders `Header` (with back button) + `IssueForm`
+
+### 2. Form renders
+
+- `IssueForm` reads `selectNextIssueId` from Redux → displays read-only preview ID
+- Empty `formData` state: `type: ''`, `severity: ''`, `description: ''`, `location: null`
 
 ### 3. User fills fields
-| Field | UI element | State update |
-|-------|------------|-------------|
-| Type | `<select>` | `setFormData({ type })` |
-| Severity | Radio buttons | `setFormData({ severity })` |
-| Location | Map click | `onLocationSelect` → `setFormData({ location })` |
-| Description | `<textarea>` | `setFormData({ description })` |
 
-### 4. Submit attempt
-- User clicks "Report Issue" → `handleSubmit` fires
-- `validateForm()` runs synchronously
-- **If invalid**: error messages rendered per field, submission stops
-- **If valid**: proceed to step 5
+| Field       | Interaction                             | State update           |
+| ----------- | --------------------------------------- | ---------------------- |
+| Issue Type  | `<select>` change                       | `formData.type`        |
+| Severity    | radio label click                       | `formData.severity`    |
+| Location    | map click → `onLocationSelect` callback | `formData.location`    |
+| Description | textarea input                          | `formData.description` |
 
-For validation rules → `docs/business-rules/issue-rules.md`
+### 4. Submit
 
-### 5. Async dispatch
-```
-dispatch(addIssue(newIssue))
-  → generateIssueIdFromState(state.issues.issues)  // compute ID
-  → addIssueToDb(issue)                             // write IndexedDB
-  → return issue                                    // resolve thunk
-```
+- `handleSubmit` called
+- `validateForm()` runs — sets `errors` and returns `false` if any field missing → form shows inline errors, stops here
+- `setIsSubmitting(true)` — button disabled, label → "Reporting..."
+- `NewIssue` object built: `{ type, severity, description: description.trim(), location }`
+- `dispatch(addIssue(newIssue)).unwrap()` called
 
-### 6. Redux state update
-- `addIssue.fulfilled` fires
-- New issue prepended to `state.issues.issues`: `[newIssue, ...state.issues]`
+### 5. addIssue thunk
+
+- `getState()` → reads current `state.issues.issues`
+- `generateIssueIdFromState(issues)` → computes next `ISS-YYYY-NNN`
+- Builds full `Issue`: adds `id`, `status: 'reported'`, `reportedAt: new Date().toISOString()`
+- `addIssueToDb(issue)` → writes to IndexedDB (`city-issues-db`, store `issues`)
+- Returns `issue` to Redux
+
+### 6. State update
+
+- `addIssue.fulfilled` reducer: `state.issues = [newIssue, ...state.issues]` (prepend, preserves sort)
 
 ### 7. Redirect
-- `.unwrap()` resolves
-- `navigate('/issues')` called
-- User lands on list; new issue appears at top
+
+- `.unwrap()` resolves → `navigate('/issues')`
+- User sees updated list with new issue at top
 
 ## Error path
-- If `addIssueToDb` throws: thunk calls `rejectWithValue('Failed to add issue')`
-- `.unwrap()` throws in `handleSubmit`
-- `catch` block: `setIsSubmitting(false)` — user can retry
-- No error message displayed to user [NEEDS CONFIRMATION]
 
-## State at each stage
-
-| Stage | Redux `issues` | IndexedDB | URL |
-|-------|---------------|-----------|-----|
-| Before submit | unchanged | unchanged | `/issues/create` |
-| Thunk pending | unchanged | unchanged | `/issues/create` |
-| IndexedDB written | unchanged | +new issue | `/issues/create` |
-| Thunk fulfilled | +new issue (prepended) | +new issue | `/issues` |
+- Thunk rejects → `.unwrap()` throws → `catch` block: `console.error`, `setIsSubmitting(false)`
+- Form stays open; no user-visible error message [NEEDS CONFIRMATION]
 
 ## Cancel path
-- User clicks "Cancel" → `navigate('/issues')`
-- No state changes; IndexedDB unchanged
+
+- "Cancel" button → `navigate('/issues')` — no issue created, no IndexedDB write
+
+## Business rules applied in this flow
+
+→ See `docs/business-rules/issue-rules.md`

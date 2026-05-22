@@ -1,66 +1,79 @@
 ---
-title: "Issue Filtering"
-description: "Search and multi-select filter controls on the issues list"
+title: Issue Filtering
+description: Search and multi-select filter controls on the issue list page
 domain: issues
 related_docs:
   - docs/business-rules/issue-rules.md
-  - docs/conventions/state.md
-tags: [filtering, search, list, url-params, filter-bar]
+tags:
+  [
+    filter,
+    search,
+    FilterBar,
+    selectFilteredIssues,
+    URL params,
+    types,
+    statuses,
+    severities,
+  ]
 ---
 
 # Issue Filtering
 
 ## What it does
-The issues list exposes a FilterBar with a text search and three multi-select dropdowns (Type, Status, Severity). Filters are persisted in URL search params so they survive page refresh and can be shared via URL. The result count is displayed above the list.
+
+On the issues list, citizens can narrow results by free-text search (matches ID or description) and/or by multi-select dropdowns for type, status, and severity. Filter state lives in URL params so results are shareable/bookmarkable. Active filter count is shown on each dropdown button.
 
 ## Functional & business requirements
 
 ### User-facing requirements
-- A user must be able to search issues by ID or description text (case-insensitive, substring).
-- A user must be able to filter by one or more `IssueType` values via a multi-select dropdown.
-- A user must be able to filter by one or more `Status` values.
-- A user must be able to filter by one or more `Severity` values.
-- A user must see how many issues match: "Showing X of Y issues" when filters are active, or "X issues reported" when no filters.
-- A user must be able to clear all filters with a single "Clear all" button (visible only when filters are active).
-- A user must be able to close a dropdown by clicking outside it.
+
+- A citizen must be able to type in a search box to filter by issue ID or description text.
+- A citizen must be able to select multiple types, statuses, and/or severities via dropdown checkboxes.
+- Active filters must be visually indicated (blue border + count on dropdown buttons).
+- A "Clear all" button must appear when any filter is active and reset all filters.
+- Filtered count ("Showing X of Y issues") must display when filters are active.
+- Filter state must survive page reload (stored in URL).
 
 ### Business constraints
-- Filters are OR within a dimension, AND across dimensions — e.g., (type=pothole OR broken_streetlight) AND (status=reported). See `docs/business-rules/issue-rules.md`.
-- Filter state is URL-only — not in Redux. URL params: `search`, `types`, `statuses`, `severities`.
-- The FilterBar is only shown when `allIssues.length > 0` (empty state hides it).
+
+- Search matches `id` and `description` fields only — not type, status, severity, location.
+- Multi-value filters within the same dimension use OR logic; across dimensions use AND.
+- Filtering never mutates Redux state — uses memoized selectors.
 
 ### Acceptance criteria
-- [ ] Typing in search box updates URL `?search=` param and filters list in real time
-- [ ] Selecting a type in the dropdown adds it to `?types=` param (comma-separated)
-- [ ] Deselecting removes it from the param; empty param is removed from URL
-- [ ] Active dropdown button shows count: "Type (2)"
-- [ ] Active dropdown has blue border (`border-blue-500`)
-- [ ] "Clear all" button appears only when at least one filter is active
-- [ ] "Clear all" resets URL to no params and shows full list
-- [ ] "No issues match your filters" message shown when filtered result is empty
-- [ ] URL with filter params can be shared and will restore the same filter state
 
-### Edge cases with business impact
-- If a URL has a `types` param with an unrecognized value, it passes through without error (no validation on parse). It simply won't match any issues.
+- [ ] Typing in search box updates URL `?search=` and narrows the list in real time
+- [ ] Selecting a type from the dropdown updates URL `?types=` and filters list
+- [ ] Multiple values in same dimension all show (OR)
+- [ ] Values across dimensions must all match (AND)
+- [ ] "Clear all" removes all params and restores full list
+- [ ] Empty filter result shows "No issues match your filters" message
+- [ ] Refreshing with filter params in URL re-applies filters
 
-### Open questions / assumptions
-- [ ] Should filters persist across navigation? Currently navigating to `/issues/create` and back clears filters if the URL changes. [NEEDS CONFIRMATION]
+### Edge cases
+
+- If all filters are cleared but `?search=` param remains as empty string, `parseArrayParam` / trim guards return empty — treated as no filter.
 
 ## User roles
-| Role | Can do | Cannot do |
-|------|--------|-----------|
-| Any visitor | Use all filters | Save filter presets |
+
+| Role    | Can do               | Cannot do                                      |
+| ------- | -------------------- | ---------------------------------------------- |
+| Citizen | Filter/search issues | Save named filters, persist filters beyond URL |
 
 ## Business rules
-→ See `docs/business-rules/issue-rules.md` (filtering rules section). Do NOT restate here.
+
+→ See `docs/business-rules/issue-rules.md`
 
 ## Key source files
-| File | Purpose | Key functions |
-|------|---------|---------------|
-| `src/components/issues/FilterBar.tsx` | Filter UI, URL param read/write | `buildURLParams`, `handleToggleType`, `handleSearchChange` |
-| `src/store/selectors/issuesSelectors.ts` | Filtered result computation | `selectFilteredIssues`, `selectFilterStats` |
-| `src/pages/IssuesList.tsx` | Wires URL params → FilterParams → selectors | `parseArrayParam` |
+
+| File                                     | Purpose                               | Key functions/components                                    |
+| ---------------------------------------- | ------------------------------------- | ----------------------------------------------------------- |
+| `src/components/issues/FilterBar.tsx`    | Filter UI, URL param writes           | `FilterBar`, `MultiSelectDropdown`                          |
+| `src/pages/IssuesList.tsx`               | Reads URL params, passes to selectors | `IssuesList`                                                |
+| `src/store/selectors/issuesSelectors.ts` | Filtering logic                       | `selectFilteredIssues`, `selectFilterStats`, `FilterParams` |
+| `src/data/constants.ts`                  | Dropdown options                      | `ISSUE_TYPES`, `STATUSES`, `SEVERITIES`                     |
 
 ## Related features
+
 - `docs/features/issue-creation.md`
 - `docs/features/issue-detail.md`

@@ -1,100 +1,64 @@
----
-title: "Data Model"
-description: "Single source of truth for entity schema and persistence"
-domain: architecture
-tags: [data-model, schema, indexeddb, redux, state, issue, location]
----
-
 # Data Model
 
-## Core entity: `Issue`
+## Issue entity
 
-Source: `src/types/index.ts:19`
+Single entity in the system. No relationships between issues.
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | `string` | yes | Auto-generated. Format: `ISS-YYYY-###`. See glossary. |
-| `type` | `IssueType` | yes | Enum — 6 values. See glossary. |
-| `description` | `string` | yes | Free text. Trimmed before save. |
-| `location` | `Location` | yes | `{ lat, lng, address? }` |
-| `severity` | `Severity` | yes | Enum — 4 values. See glossary. |
-| `status` | `Status` | yes | Enum — 4 values. Always `"reported"` on creation. |
-| `reportedAt` | `string` | yes | ISO 8601 timestamp, set at creation. Never mutated. |
+| Field         | Type        | Description                                     |
+| ------------- | ----------- | ----------------------------------------------- |
+| `id`          | `string`    | `ISS-YYYY-NNN` format, auto-generated           |
+| `type`        | `IssueType` | Category enum — see glossary                    |
+| `description` | `string`    | Free text, trimmed before save, non-empty       |
+| `location`    | `Location`  | `{ lat, lng, address? }` — WGS-84               |
+| `severity`    | `Severity`  | `low \| medium \| high \| critical`             |
+| `status`      | `Status`    | `reported \| in_progress \| resolved \| closed` |
+| `reportedAt`  | `string`    | ISO 8601 timestamp, set at creation             |
 
-### `Location` sub-object
+Source: `src/types/index.ts:19-27`
 
-Source: `src/types/index.ts:13`
+## Location sub-object
 
-| Field | Type | Required |
-|-------|------|----------|
-| `lat` | `number` | yes |
-| `lng` | `number` | yes |
-| `address` | `string` | no |
+| Field     | Type     | Required |
+| --------- | -------- | -------- |
+| `lat`     | `number` | yes      |
+| `lng`     | `number` | yes      |
+| `address` | `string` | no       |
 
-`address` is only populated in mock seed data; the interactive map sets only `lat`/`lng`.
+Source: `src/types/index.ts:13-17`
 
-### `NewIssue` (creation input)
+## NewIssue (form input shape)
+
+`Omit<Issue, 'id' | 'status' | 'reportedAt'>` — submitted to the `addIssue` thunk. The thunk augments with `id`, `status: 'reported'`, `reportedAt`.
 
 Source: `src/types/index.ts:29`
 
-`Omit<Issue, 'id' | 'status' | 'reportedAt'>` — consumer provides `type`, `description`, `location`, `severity`.
+## Persistence
 
----
+- Storage: IndexedDB, database `city-issues-db`, version `1`
+- Object store: `issues`, keyPath `id` (string)
+- No indexes defined
+- Single singleton `dbInstance` (module-level) shared across all calls
 
-## Persistence: IndexedDB
+Source: `src/db/indexedDb.ts`
 
-- **Database**: `city-issues-db` version `1`
-- **Object store**: `issues`, keyPath = `id`
-- **Singleton**: one `IDBPDatabase` instance cached in `dbInstance` variable
-- Source: `src/db/indexedDb.ts`
+## Redux state shape
 
-### CRUD operations
-
-| Function | Signature | Notes |
-|----------|-----------|-------|
-| `getDB()` | `() => Promise<IDBPDatabase>` | Opens or returns cached DB |
-| `getAllIssues()` | `() => Promise<Issue[]>` | Returns unsorted array |
-| `getIssueById(id)` | `(string) => Promise<Issue \| undefined>` | |
-| `addIssue(issue)` | `(Issue) => Promise<string>` | Uses `db.put` — upsert |
-| `updateIssue(issue)` | `(Issue) => Promise<void>` | Uses `db.put` |
-| `deleteIssue(id)` | `(string) => Promise<void>` | |
-| `getIssueCount()` | `() => Promise<number>` | |
-| `clearAllIssues()` | `() => Promise<void>` | Dangerous — no confirmation guard |
-
-Note: `addIssue` and `updateIssue` both call `db.put` — they are equivalent at DB level.
-
----
-
-## Client state: Redux
-
-Source: `src/store/slices/issuesSlice.ts`, `src/store/store.ts`
-
-### `RootState` shape
-
-```
+```ts
 {
   issues: {
-    issues: Issue[]     // sorted newest-first by reportedAt
-    isLoading: boolean  // true during loadIssues thunk
+    issues: Issue[];   // sorted newest-first by reportedAt
+    isLoading: boolean;
   }
 }
 ```
 
-### Sort invariant
-`issues` array is always sorted descending by `reportedAt`. Enforced in two places:
-1. `loadIssues.fulfilled` — sorts before setting state
-2. `addIssue.fulfilled` — prepends new issue (newest goes first)
+Source: `src/store/slices/issuesSlice.ts:7-15`, `src/store/store.ts`
 
----
+## ID format
 
-## Relationships
+`ISS-{currentYear}-{zero-padded-3-digit-sequence}`
 
-This app has no relational data. There is exactly one entity (`Issue`) with no foreign keys.
+Sequence = max of existing year-matched IDs + 1, or 1 if none exist.
+Year is re-evaluated on each creation — issues from prior years don't affect the counter for the current year.
 
----
-
-## Seed / mock data
-
-Source: `src/data/mockData.ts:getInitialMockData()`
-
-Five hardcoded issues covering all `IssueType` values. Auto-written to IndexedDB by `loadIssues` thunk when `getAllIssues()` returns empty array. IDs use `ISS-2024-00x` prefix (hardcoded year, not current year).
+Source: `generateIssueIdFromState()` in `src/store/slices/issuesSlice.ts:18-35`

@@ -1,65 +1,69 @@
 ---
-title: "Issue Detail"
-description: "Read-only view of a single issue with static map"
+title: Issue Detail
+description: Read-only detail view for a single issue
 domain: issues
 related_docs:
   - docs/business-rules/issue-rules.md
-  - docs/features/map.md
-tags: [issue, detail, view, read-only, map]
+  - docs/architecture/data-model.md
+tags:
+  [detail, IssueDetails, StaticMap, selectIssueById, issue not found, badges]
 ---
 
 # Issue Detail
 
 ## What it does
-Displays all fields of a single issue: type/status/severity badges, reported date, description, and a non-interactive map centered on the issue location. Navigation back to the list is available.
+
+Displays all fields of a single issue: type/status/severity badges, reported date, description, and a read-only static map pin. Navigated to by clicking any `IssueCard`. URL: `/issues/:id`.
 
 ## Functional & business requirements
 
 ### User-facing requirements
-- A user must be able to view a single issue by navigating to `/issues/:id`.
-- A user must see the issue's type, status, and severity as colored badges.
-- A user must see the reported date formatted as "Wednesday, January 15, 2025".
-- A user must see the full description (no truncation, preserving newlines via `whitespace-pre-wrap`).
-- A user must see a static (non-interactive) map centered on the issue location at zoom level 15.
-- A user must see the coordinates and address (if available) below the map.
-- A user must see a "Not found" screen if the issue ID doesn't exist.
-- A user must be able to navigate back to the list.
+
+- A citizen must see type, status, and severity badges at the top.
+- A citizen must see the formatted reported date ("Monday, January 1, 2025").
+- A citizen must see the full description (no truncation).
+- A citizen must see a static map centered on the issue location with a pin.
+- A citizen must see coordinates (and address if present) below the map.
+- A "Back to Issues" button must return to `/issues`.
 
 ### Business constraints
-- The detail view is read-only — no editing or status change UI exists. [NEEDS CONFIRMATION — future requirement?]
-- If the store is empty when the user lands directly on a detail URL, `loadIssues()` is dispatched automatically.
+
+- Page is read-only — no editing or status changes available from here.
+- If issue not found in Redux state (direct URL navigation before load), `loadIssues` is dispatched automatically.
 
 ### Acceptance criteria
-- [ ] `/issues/ISS-2025-001` renders the issue with id `ISS-2025-001`
-- [ ] Date displays in full format (weekday, month, day, year)
-- [ ] Static map renders centered on issue coordinates at zoom 15 with a marker
-- [ ] Navigating directly to a detail URL (cold load) correctly loads the issue
-- [ ] Unknown ID shows "Issue not found" state with Back button
-- [ ] Loading state shows "Loading issue details..." while thunk is in-flight
 
-### Edge cases with business impact
-- Direct URL navigation: `IssueDetails` dispatches `loadIssues()` if `issues.length === 0`. If issues exist in Redux (navigated from list), no re-fetch occurs.
-- `StaticMap` has all interactions disabled (`dragging: false`, `zoomControl: false`, `scrollWheelZoom: false`, `doubleClickZoom: false`, `touchZoom: false`).
+- [ ] Navigating to `/issues/:id` for a valid ID renders all issue fields
+- [ ] Navigating to `/issues/:id` for an unknown ID shows "Issue not found" state with back button
+- [ ] Refreshing the page with a valid `:id` re-loads data from IndexedDB and renders correctly
+- [ ] StaticMap renders with zoom 15, interaction disabled, pin on issue coordinates
+- [ ] Date formatted as "Weekday, Month Day, Year" (en-US locale)
 
-### Open questions / assumptions
-- [ ] Should there be a way to update issue status from the detail page? [NEEDS CONFIRMATION]
+### Edge cases
+
+- If Redux state is empty (direct URL load), `loadIssues` is dispatched; page shows loading state until complete.
+- `isLoading` is true on initial load — header shows "Loading..." during this time.
 
 ## User roles
-| Role | Can do | Cannot do |
-|------|--------|-----------|
-| Any visitor | View issue details | Edit any field |
+
+| Role    | Can do                | Cannot do                      |
+| ------- | --------------------- | ------------------------------ |
+| Citizen | View all issue fields | Edit, delete, or change status |
 
 ## Business rules
-→ See `docs/business-rules/issue-rules.md`. Do NOT restate here.
+
+→ See `docs/business-rules/issue-rules.md`
 
 ## Key source files
-| File | Purpose | Key functions |
-|------|---------|---------------|
-| `src/pages/IssueDetails.tsx` | Route component, data load guard, render | `formatDate` |
-| `src/store/selectors/issuesSelectors.ts` | Issue lookup | `selectIssueById` |
-| `src/components/issues/IssueMap.tsx` | Static map display | `StaticMap` |
-| `src/components/issues/StatusBadge.tsx` | Badge rendering | `StatusBadge`, `SeverityBadge`, `TypeBadge` |
+
+| File                                     | Purpose                | Key functions/components                    |
+| ---------------------------------------- | ---------------------- | ------------------------------------------- |
+| `src/pages/IssueDetails.tsx`             | Page shell, load guard | `IssueDetails`, `formatDate`                |
+| `src/components/issues/IssueMap.tsx`     | Read-only map          | `StaticMap`                                 |
+| `src/components/issues/StatusBadge.tsx`  | Enum badges            | `StatusBadge`, `SeverityBadge`, `TypeBadge` |
+| `src/store/selectors/issuesSelectors.ts` | Lookup by ID           | `selectIssueById`                           |
 
 ## Related features
-- `docs/features/map.md`
-- `docs/features/issue-filtering.md`
+
+- `docs/features/map.md` — StaticMap behavior
+- `docs/features/issue-filtering.md` — list view issues link from

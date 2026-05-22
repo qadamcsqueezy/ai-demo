@@ -1,75 +1,35 @@
----
-title: "Form Conventions"
-description: "Validation, error handling, and submission patterns"
-domain: conventions
-tags: [forms, validation, errors, submission, react]
----
-
 # Form Conventions
 
-## Single form in codebase
+## Pattern
 
-`src/components/issues/IssueForm.tsx` is the only form. It is the canonical pattern to follow for any new form.
-
-## Local state shape
-
-```typescript
-const [formData, setFormData] = useState<{
-  type: IssueType | '';
-  severity: Severity | '';
-  description: string;
-  location: Location | null;
-}>({ type: '', severity: '', description: '', location: null });
-
-const [errors, setErrors] = useState<{
-  type?: string;
-  severity?: string;
-  description?: string;
-  location?: string;
-}>({});
-```
-
-Separate `formData` and `errors` objects. No form library (no react-hook-form, no Formik).
+Forms use local `useState` for field values and a separate `errors` object. No form library.
 
 ## Validation
 
-All validation in a synchronous `validateForm(): boolean` function. Runs on submit, not on change. Sets all errors at once, returns `false` if any exist.
+- `validateForm()` is a local function that builds an errors object and calls `setErrors`
+- Returns `boolean` — `handleSubmit` short-circuits if `false`
+- All four fields in `IssueForm` are required: `type`, `severity`, `description` (non-empty after trim), `location` (non-null)
+- Error messages render as `<p className="mt-1 text-sm text-red-500">` below each field
 
-Required fields: `type`, `severity`, `description` (non-empty after trim), `location` (non-null).
+## Submission
 
-See full rules: `docs/business-rules/issue-rules.md`.
+- `handleSubmit` calls `validateForm()` first, then `setIsSubmitting(true)`, then dispatches thunk via `.unwrap()`
+- On success: `navigate('/issues')`
+- On failure: `setIsSubmitting(false)`, error logged to console — no user-facing error toast currently
+- Submit button is `disabled` while `isSubmitting`; label changes to "Reporting..."
 
-## Submission pattern
+## Field types
 
-```typescript
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
-  setIsSubmitting(true);
-  try {
-    await dispatch(addIssue(newIssue)).unwrap();
-    navigate('/issues');
-  } catch {
-    setIsSubmitting(false);
-  }
-};
-```
+| Field         | Input element                                                | Options source                             |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------ |
+| `type`        | `<select>`                                                   | `ISSUE_TYPES` from `src/data/constants.ts` |
+| `severity`    | radio-style `<label>` wrapping hidden `<input type="radio">` | `SEVERITIES` from `src/data/constants.ts`  |
+| `location`    | `InteractiveMap` click handler                               | user map click                             |
+| `description` | `<textarea rows={4}>`                                        | free text                                  |
 
-- `.unwrap()` re-throws rejected thunk so `catch` fires on failure
-- On success: navigate away (no explicit reset needed)
-- On failure: clear `isSubmitting` so user can retry
-- No success toast or feedback — just redirect
+## Rules
 
-## Error display
-
-Each field has an adjacent `{errors.field && <p className="mt-1 text-sm text-red-500">{errors.field}</p>}`.
-
-Error border on text inputs/selects: swap `border-gray-300` for `border-red-500` when `errors.field` is set.
-
-## Loading state
-
-`isSubmitting: boolean` in local state. Disables submit and cancel buttons, changes button label to `'Reporting...'`.
-
-## Preview ID
-
-The form shows a read-only preview of the next issue ID via `selectNextIssueId`. It's cosmetic only — actual ID is generated inside the thunk at dispatch time from current state.
+- Never bypass `validateForm()` — all four fields are required
+- `description` is trimmed before inclusion in `NewIssue`
+- `type` and `severity` are cast from string to their enum types at submit time
+- `location` remains `null` until user clicks map; form errors if still null on submit
